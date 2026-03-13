@@ -1,0 +1,22 @@
+enabled = true
+clipboard_retry_count = 6
+clipboard_retry_delay_ms = 40
+
+[hotkey]
+modifiers = ["ctrl", "shift"]
+key = "C"
+copy_before_redact = false
+copy_settle_delay_ms = 90
+
+[redaction]
+redact_email = true
+redact_phone = true
+redact_address = true
+redact_urls_with_tokens = true
+redact_account_numbers = true
+redact_ssn = true
+redact_labeled_fields = true
+redact_dates = true
+redact_names_in_salutations = true
+custom_names = []
+allowlist_tokens = []

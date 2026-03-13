@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Secure Clipboard"
+    Language="1033"
+    Version="0.1.0"
+    Manufacturer="Secure Clipboard"
+    UpgradeCode="8D3CE650-7F65-4B65-BD7B-527A2CEFB964">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Secure Clipboard is already installed." />
+    <MediaTemplate />
+
+    <Feature Id="ProductFeature" Title="Secure Clipboard" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="Secure Clipboard" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Secure Clipboard" />
+      </Directory>
+      <Directory Id="DesktopFolder" />
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents">
+      <Component Id="SecureClipboardExe" Guid="D0E8CA8B-5A1A-49E4-B8F3-CCF7F6CBEA5A" Directory="INSTALLFOLDER" Win64="yes">
+        <File Id="SecureClipboardBinary" Source="$(var.CargoTargetBinDir)\secure-clipboard.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="RunOnStartup" Guid="2B0AF3C2-CC71-4D6B-84FA-8A1E9B14E4F0" Directory="INSTALLFOLDER" Win64="yes">
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\Microsoft\Windows\CurrentVersion\Run"
+          Name="Secure Clipboard"
+          Type="string"
+          Value="&quot;[INSTALLFOLDER]secure-clipboard.exe&quot;"
+          KeyPath="yes" />
+      </Component>
+
+      <Component Id="StartMenuShortcut" Guid="9FD8D6E6-5236-46A4-B8E8-36A34061F8D8" Directory="ApplicationProgramsFolder" Win64="yes">
+        <Shortcut
+          Id="StartMenuSecureClipboardShortcut"
+          Name="Secure Clipboard"
+          Description="Secure Clipboard"
+          Target="[INSTALLFOLDER]secure-clipboard.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\SecureClipboard" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut" Guid="16F94BB8-0B7A-43BE-BF5B-0FC06E661CF9" Directory="DesktopFolder" Win64="yes">
+        <Shortcut
+          Id="DesktopSecureClipboardShortcut"
+          Name="Secure Clipboard"
+          Description="Secure Clipboard"
+          Target="[INSTALLFOLDER]secure-clipboard.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\SecureClipboard" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

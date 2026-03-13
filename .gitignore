@@ -3,5 +3,6 @@
 Cargo.lock
 *.msi
 *.log
+tools/wix314/
 /.idea
 /.vscode

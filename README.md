@@ -85,14 +85,19 @@ cargo test
 
 ## Packaging (MSI)
 
-This repo includes a WiX template at `wix/main.wxs` and ships a pinned WiX 3.14 toolset under `tools/wix314/` so you can build an installer without installing WiX globally.
+This repo includes a WiX template at `wix/main.wxs` and an optional helper script that downloads a pinned WiX 3.14 toolset into `tools/wix314/` (which is ignored by Git).
 
-Recommended packaging flow:
+Recommended packaging flow (from the repo root, in PowerShell):
 
-```bash
-cargo install cargo-wix
-cargo wix -b tools/wix314
+```powershell
+.\scripts\setup-wix-and-build.ps1
 ```
+
+This will:
+
+- download WiX 3.14 binaries into `tools/wix314/` if they are not present
+- ensure `cargo-wix` is installed
+- run `cargo wix -b tools/wix314`
 
 The installer is generated in `target/wix/` as `secure-clipboard-<version>-x86_64.msi`.
 

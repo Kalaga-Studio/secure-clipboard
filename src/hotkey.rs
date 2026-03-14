@@ -11,7 +11,8 @@ pub struct HotkeyController {
 
 impl HotkeyController {
     pub fn new(config: &HotkeyConfig) -> Result<Self> {
-        let manager = GlobalHotKeyManager::new().map_err(|e| anyhow!("failed to create hotkey manager: {e}"))?;
+        let manager = GlobalHotKeyManager::new()
+            .map_err(|e| anyhow!("failed to create hotkey manager: {e}"))?;
         let hotkey = parse_hotkey(config)?;
         let hotkey_id = hotkey.id();
         manager

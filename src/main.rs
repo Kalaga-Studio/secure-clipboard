@@ -9,6 +9,7 @@ use log::{error, info, warn};
 use secure_clipboard::clipboard::ClipboardClient;
 use secure_clipboard::config::AppConfig;
 use secure_clipboard::hotkey::HotkeyController;
+use secure_clipboard::notify;
 use secure_clipboard::redaction::RedactionEngine;
 use secure_clipboard::tray::{TrayAction, TrayController};
 
@@ -17,7 +18,10 @@ fn main() -> Result<()> {
 
     let config = AppConfig::load_or_create_default()?;
     let enabled = Arc::new(AtomicBool::new(config.enabled));
-    let mut clipboard = ClipboardClient::new(config.clipboard_retry_count, config.clipboard_retry_delay_ms)?;
+    let mut clipboard = ClipboardClient::new(
+        config.clipboard_retry_count,
+        config.clipboard_retry_delay_ms,
+    )?;
     let engine = RedactionEngine::new(config.redaction.clone())?;
 
     let hotkey = HotkeyController::new(&config.hotkey)?;
@@ -32,7 +36,12 @@ fn main() -> Result<()> {
         if let Some(hotkey_event) = hotkey.poll_event() {
             if hotkey.is_activation_event(&hotkey_event) {
                 info!("hotkey pressed; starting redaction cycle");
-                run_redaction_cycle(&config, &engine, &mut clipboard, enabled.load(Ordering::Relaxed));
+                run_redaction_cycle(
+                    &config,
+                    &engine,
+                    &mut clipboard,
+                    enabled.load(Ordering::Relaxed),
+                );
             }
         }
 
@@ -56,7 +65,9 @@ fn main() -> Result<()> {
 #[cfg(windows)]
 fn pump_windows_messages() {
     use windows_sys::Win32::Foundation::HWND;
-    use windows_sys::Win32::UI::WindowsAndMessaging::{DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE,
+    };
 
     // Drain the thread message queue so global hotkey/tray events get delivered.
     // (Some libraries require a Win32 message pump on the creating thread.)
@@ -76,6 +87,7 @@ fn run_redaction_cycle(
     enabled: bool,
 ) {
     if !enabled {
+        notify::show_disabled_toast();
         return;
     }
 
@@ -94,10 +106,12 @@ fn run_redaction_cycle(
         }
         Ok(None) => {
             warn!("clipboard appears empty or non-text after copy");
+            notify::show_error_toast("Clipboard is empty or non-text.");
             return;
         }
         Err(err) => {
             warn!("clipboard read failed: {err}");
+            notify::show_error_toast("Failed to read clipboard.");
             return;
         }
     };
@@ -109,12 +123,19 @@ fn run_redaction_cycle(
         info!("redaction changed text; writing redacted clipboard");
     }
 
-    let out = if result.changed { &result.redacted_text } else { &text };
+    let out = if result.changed {
+        &result.redacted_text
+    } else {
+        &text
+    };
     if let Err(err) = clipboard.write_text(out) {
         error!("clipboard write failed: {err}");
+        notify::show_error_toast("Failed to write to clipboard.");
         return;
     }
     info!("clipboard write succeeded");
+
+    notify::show_redaction_toast(&result);
 
     if result.changed {
         info!(

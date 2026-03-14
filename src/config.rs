@@ -46,6 +46,12 @@ pub struct RedactionConfig {
     pub redact_dates: bool,
     #[serde(default = "default_true")]
     pub redact_names_in_salutations: bool,
+    #[serde(default = "default_true")]
+    pub redact_ip_addresses: bool,
+    #[serde(default = "default_true")]
+    pub redact_iban: bool,
+    #[serde(default = "default_true")]
+    pub redact_passport: bool,
     #[serde(default)]
     pub custom_names: Vec<String>,
     #[serde(default)]
@@ -74,6 +80,9 @@ impl Default for AppConfig {
                 redact_labeled_fields: true,
                 redact_dates: true,
                 redact_names_in_salutations: true,
+                redact_ip_addresses: true,
+                redact_iban: true,
+                redact_passport: true,
                 custom_names: vec![],
                 allowlist_tokens: vec![],
             },
@@ -88,10 +97,12 @@ impl AppConfig {
             let parent = config_path
                 .parent()
                 .ok_or_else(|| anyhow!("invalid config path"))?;
-            fs::create_dir_all(parent).with_context(|| format!("failed to create config dir: {}", parent.display()))?;
+            fs::create_dir_all(parent)
+                .with_context(|| format!("failed to create config dir: {}", parent.display()))?;
             let default = AppConfig::default();
-            fs::write(&config_path, toml::to_string_pretty(&default)?)
-                .with_context(|| format!("failed to write default config: {}", config_path.display()))?;
+            fs::write(&config_path, toml::to_string_pretty(&default)?).with_context(|| {
+                format!("failed to write default config: {}", config_path.display())
+            })?;
             return Ok(default);
         }
 

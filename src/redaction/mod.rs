@@ -5,12 +5,13 @@ use regex::Regex;
 
 use crate::config::RedactionConfig;
 use crate::redaction::mask::{
-    mask_account_like, mask_address, mask_email, mask_labeled_field, mask_name, mask_url_keep_host,
+    mask_account_like, mask_address, mask_alphanumeric, mask_email, mask_labeled_field, mask_name,
+    mask_url_keep_host,
 };
 use crate::redaction::patterns::{
-    account_pattern, address_pattern, date_pattern, email_pattern, labeled_pii_pattern,
-    salutation_name_pattern, signoff_name_pattern, ssn_pattern, url_with_token_pattern,
-    PhonePatternSet,
+    account_pattern, address_pattern, date_pattern, email_pattern, iban_pattern, ip_pattern,
+    labeled_pii_pattern, passport_pattern, salutation_name_pattern, signoff_name_pattern,
+    ssn_pattern, url_with_token_pattern, PhonePatternSet,
 };
 
 #[derive(Debug, Clone)]
@@ -30,6 +31,9 @@ pub enum EntityType {
     LabeledField,
     Date,
     Name,
+    IpAddress,
+    Iban,
+    Passport,
 }
 
 impl EntityType {
@@ -44,6 +48,9 @@ impl EntityType {
             EntityType::LabeledField => "labeled_field",
             EntityType::Date => "date",
             EntityType::Name => "name",
+            EntityType::IpAddress => "ip_address",
+            EntityType::Iban => "iban",
+            EntityType::Passport => "passport",
         }
     }
 }
@@ -67,6 +74,9 @@ pub struct RedactionEngine {
     salutation_re: Regex,
     signoff_re: Regex,
     phone_patterns: PhonePatternSet,
+    ip_re: Regex,
+    iban_re: Regex,
+    passport_re: Regex,
 }
 
 impl RedactionEngine {
@@ -83,6 +93,9 @@ impl RedactionEngine {
             salutation_re: salutation_name_pattern()?,
             signoff_re: signoff_name_pattern()?,
             phone_patterns: PhonePatternSet::new()?,
+            ip_re: ip_pattern()?,
+            iban_re: iban_pattern()?,
+            passport_re: passport_pattern()?,
         })
     }
 
@@ -91,7 +104,7 @@ impl RedactionEngine {
         let mut records = Vec::new();
 
         log::info!(
-            "redact: input {} chars | flags: email={} phone={} ssn={} acct={} labeled={} dates={} addr={} names={}",
+            "redact: input {} chars | flags: email={} phone={} ssn={} acct={} labeled={} dates={} addr={} names={} ip={} iban={} passport={}",
             input.len(),
             self.config.redact_email,
             self.config.redact_phone,
@@ -101,6 +114,9 @@ impl RedactionEngine {
             self.config.redact_dates,
             self.config.redact_address,
             self.config.redact_names_in_salutations,
+            self.config.redact_ip_addresses,
+            self.config.redact_iban,
+            self.config.redact_passport,
         );
 
         // Labeled fields first so their values don't get partially matched
@@ -195,6 +211,42 @@ impl RedactionEngine {
             log::info!("  address: {} match(es)", records.len() - n);
         }
 
+        if self.config.redact_ip_addresses {
+            let n = records.len();
+            apply_regex_replacement(
+                &mut text,
+                &self.ip_re,
+                &mut records,
+                EntityType::IpAddress,
+                |m| mask_account_like(m.as_str()),
+            );
+            log::info!("  ip_addresses: {} match(es)", records.len() - n);
+        }
+
+        if self.config.redact_iban {
+            let n = records.len();
+            apply_regex_replacement(
+                &mut text,
+                &self.iban_re,
+                &mut records,
+                EntityType::Iban,
+                |m| mask_alphanumeric(m.as_str()),
+            );
+            log::info!("  iban: {} match(es)", records.len() - n);
+        }
+
+        if self.config.redact_passport {
+            let n = records.len();
+            apply_regex_replacement(
+                &mut text,
+                &self.passport_re,
+                &mut records,
+                EntityType::Passport,
+                |m| mask_alphanumeric(m.as_str()),
+            );
+            log::info!("  passport: {} match(es)", records.len() - n);
+        }
+
         if self.config.redact_names_in_salutations {
             let n = records.len();
             apply_name_redaction(&mut text, &self.salutation_re, &mut records);
@@ -210,13 +262,9 @@ impl RedactionEngine {
         {
             let escaped = regex::escape(custom_name.trim());
             if let Ok(name_re) = Regex::new(&format!(r"\b{}\b", escaped)) {
-                apply_regex_replacement(
-                    &mut text,
-                    &name_re,
-                    &mut records,
-                    EntityType::Name,
-                    |m| mask_name(m.as_str()),
-                );
+                apply_regex_replacement(&mut text, &name_re, &mut records, EntityType::Name, |m| {
+                    mask_name(m.as_str())
+                });
             }
         }
 

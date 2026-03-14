@@ -147,10 +147,10 @@ impl ClipboardClient {
         }
 
         let mut inputs = vec![
-            unsafe { key_input(VK_CONTROL as u16, 0) },
+            unsafe { key_input(VK_CONTROL, 0) },
             unsafe { key_input(b'C' as u16, 0) },
             unsafe { key_input(b'C' as u16, KEYEVENTF_KEYUP) },
-            unsafe { key_input(VK_CONTROL as u16, KEYEVENTF_KEYUP) },
+            unsafe { key_input(VK_CONTROL, KEYEVENTF_KEYUP) },
         ];
 
         let sent = unsafe {

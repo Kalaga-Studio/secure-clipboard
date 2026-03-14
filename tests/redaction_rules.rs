@@ -9,7 +9,13 @@ fn default_cfg() -> RedactionConfig {
         redact_address: true,
         redact_urls_with_tokens: true,
         redact_account_numbers: true,
+        redact_ssn: true,
+        redact_labeled_fields: true,
+        redact_dates: true,
         redact_names_in_salutations: true,
+        redact_ip_addresses: true,
+        redact_iban: true,
+        redact_passport: true,
         custom_names: vec![],
         allowlist_tokens: vec![],
     }

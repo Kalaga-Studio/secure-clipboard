@@ -21,6 +21,7 @@ toml = "0.8"
 tray-icon = "0.14"
 
 [target.'cfg(windows)'.dependencies]
+win-toast-notify = "0.1"
 windows-sys = { version = "0.59", features = [
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_WindowsAndMessaging",
@@ -30,3 +31,4 @@ windows-sys = { version = "0.59", features = [
 
 [dev-dependencies]
 pretty_assertions = "1"
+tempfile = "3"
